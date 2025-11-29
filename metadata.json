@@ -1,0 +1,5 @@
+{
+  "name": "TapeToTape Tourney Tracker",
+  "description": "A dark-mode, mobile-first tournament tracker for 5 players featuring an AI Commissioner for match analysis and trash talk.",
+  "requestFramePermissions": []
+}
