@@ -10,6 +10,7 @@ const TrophyIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentCol
 const App: React.FC = () => {
   // State
   const [view, setView] = useState<AppView>(AppView.SETUP);
+  const [playerCount, setPlayerCount] = useState<number>(5);
   const [players, setPlayers] = useState<Player[]>([
     { id: 'p1', name: '', seed: 1 },
     { id: 'p2', name: '', seed: 2 },
@@ -20,6 +21,25 @@ const App: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [updatingMatchId, setUpdatingMatchId] = useState<string | null>(null);
 
+  // Update players array when player count changes
+  useEffect(() => {
+    setPlayers(prev => {
+      // If increasing player count, add new players
+      if (prev.length < playerCount) {
+        const newPlayers = [...prev];
+        for (let i = prev.length; i < playerCount; i++) {
+          newPlayers.push({ id: `p${i + 1}`, name: '', seed: i + 1 });
+        }
+        return newPlayers;
+      }
+      // If decreasing player count, remove players from the end
+      if (prev.length > playerCount) {
+        return prev.slice(0, playerCount);
+      }
+      return prev;
+    });
+  }, [playerCount]);
+
   // Load from local storage on mount
   useEffect(() => {
     const savedData = localStorage.getItem('tapeToTapeData');
@@ -27,6 +47,7 @@ const App: React.FC = () => {
       const parsed = JSON.parse(savedData);
       setPlayers(parsed.players);
       setMatches(parsed.matches);
+      setPlayerCount(parsed.playerCount || parsed.players.length);
       if (parsed.matches.length > 0) {
         setView(AppView.DASHBOARD);
       }
@@ -36,14 +57,14 @@ const App: React.FC = () => {
   // Save to local storage on change
   useEffect(() => {
     if (matches.length > 0) {
-      localStorage.setItem('tapeToTapeData', JSON.stringify({ players, matches }));
+      localStorage.setItem('tapeToTapeData', JSON.stringify({ players, matches, playerCount }));
     }
-  }, [players, matches]);
+  }, [players, matches, playerCount]);
 
   const handleStartTournament = () => {
     // Validate names
     if (players.some(p => !p.name.trim())) {
-      alert("Please enter all 5 player names!");
+      alert(`Please enter all ${playerCount} player names!`);
       return;
     }
     
@@ -57,13 +78,13 @@ const App: React.FC = () => {
     setPlayers(prev => prev.map(p => p.id === id ? { ...p, name } : p));
   };
 
-  const handleUpdateScore = async (matchId: string, s1: number, s2: number) => {
+  const handleUpdateScore = async (matchId: string, s1: number, s2: number, isOvertime: boolean) => {
     setUpdatingMatchId(matchId);
 
     // Update match with score
     setMatches(prev => prev.map(m => {
         if (m.id === matchId) {
-            return { ...m, p1Score: s1, p2Score: s2, isComplete: true };
+            return { ...m, p1Score: s1, p2Score: s2, isOvertime, isComplete: true };
         }
         return m;
     }));
@@ -101,10 +122,34 @@ const App: React.FC = () => {
           <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8 animate-fade-in">
             <div className="text-center space-y-2">
               <h2 className="text-3xl font-bold text-white">New Tournament</h2>
-              <p className="text-slate-400">Enter 5 contenders for Tape to Tape glory.</p>
+              <p className="text-slate-400">Choose player count and enter names.</p>
             </div>
-            
+
             <div className="w-full max-w-md space-y-4 bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl">
+              {/* Player Count Selection */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-300">Number of Players</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[2, 3, 4, 5, 6, 7, 8, 10].map(count => (
+                    <button
+                      key={count}
+                      onClick={() => setPlayerCount(count)}
+                      className={`py-2 px-3 rounded-lg font-semibold transition ${
+                        playerCount === count
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      {count}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-slate-700 pt-4">
+                <label className="block text-sm font-medium text-slate-300 mb-3">Player Names</label>
+              </div>
+
               {players.map((p, i) => (
                 <div key={p.id} className="flex items-center gap-4">
                   <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-slate-400 text-sm">

@@ -5,20 +5,21 @@ interface MatchCardProps {
   match: Match;
   p1: Player;
   p2: Player;
-  onUpdateScore: (matchId: string, s1: number, s2: number) => void;
+  onUpdateScore: (matchId: string, s1: number, s2: number, isOvertime: boolean) => void;
   isUpdating: boolean;
 }
 
 export const MatchCard: React.FC<MatchCardProps> = ({ match, p1, p2, onUpdateScore, isUpdating }) => {
   const [s1, setS1] = useState<string>(match.p1Score?.toString() || '');
   const [s2, setS2] = useState<string>(match.p2Score?.toString() || '');
+  const [isOvertime, setIsOvertime] = useState<boolean>(match.isOvertime || false);
   const [isEditing, setIsEditing] = useState(!match.isComplete);
 
   const handleSave = () => {
     const score1 = parseInt(s1);
     const score2 = parseInt(s2);
     if (!isNaN(score1) && !isNaN(score2)) {
-      onUpdateScore(match.id, score1, score2);
+      onUpdateScore(match.id, score1, score2, isOvertime);
       setIsEditing(false);
     }
   };
@@ -63,7 +64,10 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, p1, p2, onUpdateSco
             ) : (
                 <div className="flex items-center gap-4 bg-slate-900/50 px-4 py-2 rounded-lg border border-slate-700/50">
                     <span className={`text-2xl font-bold ${match.p1Score! > match.p2Score! ? 'text-white' : 'text-slate-500'}`}>{match.p1Score}</span>
-                    <span className="text-slate-600 text-xs uppercase tracking-widest">VS</span>
+                    <div className="flex flex-col items-center gap-1">
+                        <span className="text-slate-600 text-xs uppercase tracking-widest">VS</span>
+                        {match.isOvertime && <span className="text-orange-500 text-xs font-bold">OT</span>}
+                    </div>
                     <span className={`text-2xl font-bold ${match.p2Score! > match.p1Score! ? 'text-white' : 'text-slate-500'}`}>{match.p2Score}</span>
                 </div>
             )}
@@ -81,13 +85,27 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, p1, p2, onUpdateSco
       </div>
 
       {isEditing && (
-         <button 
-            onClick={handleSave}
-            disabled={isUpdating}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 text-sm font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
-         >
-            {isUpdating ? 'Recording...' : 'Finalize Score'}
-         </button>
+         <>
+            <div className="px-4 pb-2 flex items-center justify-center gap-2">
+               <input
+                  type="checkbox"
+                  id={`ot-${match.id}`}
+                  checked={isOvertime}
+                  onChange={(e) => setIsOvertime(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-slate-900 border-slate-600 rounded focus:ring-blue-500"
+               />
+               <label htmlFor={`ot-${match.id}`} className="text-sm text-slate-300 cursor-pointer">
+                  Overtime
+               </label>
+            </div>
+            <button
+               onClick={handleSave}
+               disabled={isUpdating}
+               className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 text-sm font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+            >
+               {isUpdating ? 'Recording...' : 'Finalize Score'}
+            </button>
+         </>
       )}
 
       {/* AI Recap */}

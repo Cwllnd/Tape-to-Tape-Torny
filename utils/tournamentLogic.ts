@@ -33,6 +33,7 @@ export const calculateStandings = (players: Player[], matches: Match[]): Standin
       played: 0,
       wins: 0,
       losses: 0,
+      otl: 0,
       gf: 0,
       ga: 0,
       diff: 0,
@@ -55,13 +56,29 @@ export const calculateStandings = (players: Player[], matches: Match[]): Standin
       standings[m.p2Id].diff += (m.p2Score - m.p1Score);
 
       if (m.p1Score > m.p2Score) {
+        // Player 1 wins
         standings[m.p1Id].wins += 1;
         standings[m.p1Id].points += 2;
-        standings[m.p2Id].losses += 1;
+
+        // Player 2 loses
+        if (m.isOvertime) {
+          standings[m.p2Id].otl += 1;
+          standings[m.p2Id].points += 1; // OT loss = 1 point
+        } else {
+          standings[m.p2Id].losses += 1; // Regulation loss = 0 points
+        }
       } else if (m.p2Score > m.p1Score) {
+        // Player 2 wins
         standings[m.p2Id].wins += 1;
         standings[m.p2Id].points += 2;
-        standings[m.p1Id].losses += 1;
+
+        // Player 1 loses
+        if (m.isOvertime) {
+          standings[m.p1Id].otl += 1;
+          standings[m.p1Id].points += 1; // OT loss = 1 point
+        } else {
+          standings[m.p1Id].losses += 1; // Regulation loss = 0 points
+        }
       } else {
         // Draw (Unlikely in tape to tape usually, but handling it as 1pt each)
         standings[m.p1Id].points += 1;

@@ -11,6 +11,7 @@ export interface Match {
   p1Score: number | null;
   p2Score: number | null;
   isComplete: boolean;
+  isOvertime?: boolean; // True if the game went to overtime
   recap?: string; // AI generated recap
 }
 
@@ -20,10 +21,11 @@ export interface StandingsRow {
   played: number;
   wins: number;
   losses: number;
+  otl: number; // Overtime Losses
   gf: number; // Goals For
   ga: number; // Goals Against
   diff: number; // Goal Differential
-  points: number; // 2 for Win, 0 for Loss (Simplified)
+  points: number; // 2 for Win, 1 for OT Loss, 0 for Regulation Loss
 }
 
 export enum AppView {

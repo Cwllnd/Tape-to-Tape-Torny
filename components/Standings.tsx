@@ -22,6 +22,7 @@ export const Standings: React.FC<StandingsProps> = ({ data }) => {
               <th className="px-4 py-3 text-center">GP</th>
               <th className="px-4 py-3 text-center">W</th>
               <th className="px-4 py-3 text-center">L</th>
+              <th className="px-4 py-3 text-center">OTL</th>
               <th className="px-4 py-3 text-center hidden sm:table-cell">GF</th>
               <th className="px-4 py-3 text-center hidden sm:table-cell">GA</th>
               <th className="px-4 py-3 text-center">Diff</th>
@@ -39,6 +40,7 @@ export const Standings: React.FC<StandingsProps> = ({ data }) => {
                 <td className="px-4 py-3 text-center">{row.played}</td>
                 <td className="px-4 py-3 text-center text-green-400">{row.wins}</td>
                 <td className="px-4 py-3 text-center text-red-400">{row.losses}</td>
+                <td className="px-4 py-3 text-center text-orange-400">{row.otl}</td>
                 <td className="px-4 py-3 text-center hidden sm:table-cell text-slate-400">{row.gf}</td>
                 <td className="px-4 py-3 text-center hidden sm:table-cell text-slate-400">{row.ga}</td>
                 <td className="px-4 py-3 text-center font-mono">{row.diff > 0 ? `+${row.diff}` : row.diff}</td>
@@ -49,7 +51,7 @@ export const Standings: React.FC<StandingsProps> = ({ data }) => {
         </table>
       </div>
       <div className="p-3 text-xs text-slate-500 text-center bg-slate-900/30">
-        Top 2 advance to finals • 2 Pts for Win • GF/GA = Goals For/Against
+        Top 2 advance to finals • 2 Pts for Win • 1 Pt for OT Loss • OTL = Overtime Loss
       </div>
     </div>
   );
