@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Player, Match, AppView } from './types';
 import { generateRoundRobinSchedule, calculateStandings } from './utils/tournamentLogic';
-import { generateMatchRecap } from './services/geminiService';
 import { Standings } from './components/Standings';
 import { MatchCard } from './components/MatchCard';
-import { CommissionerChat } from './components/CommissionerChat';
 
 // Icons
 const TrophyIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4l2 7 2-7h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M9 21v-2a2 2 0 012-2h2a2 2 0 012 2v2" /></svg>; // Actually generic schedule icon
@@ -61,30 +59,15 @@ const App: React.FC = () => {
 
   const handleUpdateScore = async (matchId: string, s1: number, s2: number) => {
     setUpdatingMatchId(matchId);
-    
-    // Optimistic update
-    let updatedMatch: Match | undefined;
-    
+
+    // Update match with score
     setMatches(prev => prev.map(m => {
         if (m.id === matchId) {
-            updatedMatch = { ...m, p1Score: s1, p2Score: s2, isComplete: true };
-            return updatedMatch;
+            return { ...m, p1Score: s1, p2Score: s2, isComplete: true };
         }
         return m;
     }));
 
-    if (updatedMatch) {
-        const p1 = players.find(p => p.id === updatedMatch!.p1Id)!;
-        const p2 = players.find(p => p.id === updatedMatch!.p2Id)!;
-        
-        // Generate AI Recap in background
-        const recap = await generateMatchRecap(updatedMatch, p1, p2);
-        
-        setMatches(prev => prev.map(m => 
-            m.id === matchId ? { ...m, recap } : m
-        ));
-    }
-    
     setUpdatingMatchId(null);
   };
 
@@ -110,22 +93,6 @@ const App: React.FC = () => {
               PUCK<span className="text-blue-500">DROP</span>
             </h1>
           </div>
-          {view === AppView.DASHBOARD && (
-            <div className="flex gap-2">
-                 <button 
-                  onClick={() => setView(AppView.DASHBOARD)}
-                  className={`px-3 py-1 rounded text-sm font-bold ${view === AppView.DASHBOARD ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                >
-                  Stats
-                </button>
-                <button 
-                  onClick={() => setView(AppView.COMMISSIONER)}
-                  className={`px-3 py-1 rounded text-sm font-bold ${view === AppView.COMMISSIONER ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                >
-                  AI Commish
-                </button>
-            </div>
-          )}
         </div>
       </header>
 
@@ -215,18 +182,6 @@ const App: React.FC = () => {
                     Reset Tournament Data
                 </button>
             </div>
-          </div>
-        )}
-
-        {view === AppView.COMMISSIONER && (
-          <div className="space-y-6">
-             <button 
-                onClick={() => setView(AppView.DASHBOARD)} 
-                className="text-sm text-blue-400 hover:text-white flex items-center gap-1"
-             >
-                ← Back to Stats
-             </button>
-             <CommissionerChat standings={standings} matches={matches} />
           </div>
         )}
       </main>
