@@ -1,22 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Player, Match, AppView } from './types';
-import { generateRoundRobinSchedule, calculateStandings } from './utils/tournamentLogic';
+import { Player, Match, AppView, MatchPhase } from './types';
+import { generateTournamentSchedule, calculateStandings, generatePlayoffMatches, generateFinalMatch } from './utils/tournamentLogic';
 import { Standings } from './components/Standings';
 import { MatchCard } from './components/MatchCard';
-
-// Icons
-const TrophyIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4l2 7 2-7h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M9 21v-2a2 2 0 012-2h2a2 2 0 012 2v2" /></svg>; // Actually generic schedule icon
 
 const App: React.FC = () => {
   // State
   const [view, setView] = useState<AppView>(AppView.SETUP);
-  const [playerCount, setPlayerCount] = useState<number>(5);
+  const [playerCount, setPlayerCount] = useState<number>(6);
   const [players, setPlayers] = useState<Player[]>([
     { id: 'p1', name: '', seed: 1 },
     { id: 'p2', name: '', seed: 2 },
     { id: 'p3', name: '', seed: 3 },
     { id: 'p4', name: '', seed: 4 },
     { id: 'p5', name: '', seed: 5 },
+    { id: 'p6', name: '', seed: 6 },
   ]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [updatingMatchId, setUpdatingMatchId] = useState<string | null>(null);
@@ -24,7 +22,6 @@ const App: React.FC = () => {
   // Update players array when player count changes
   useEffect(() => {
     setPlayers(prev => {
-      // If increasing player count, add new players
       if (prev.length < playerCount) {
         const newPlayers = [...prev];
         for (let i = prev.length; i < playerCount; i++) {
@@ -32,7 +29,6 @@ const App: React.FC = () => {
         }
         return newPlayers;
       }
-      // If decreasing player count, remove players from the end
       if (prev.length > playerCount) {
         return prev.slice(0, playerCount);
       }
@@ -61,15 +57,39 @@ const App: React.FC = () => {
     }
   }, [players, matches, playerCount]);
 
+  // Check if group stage is complete and generate playoffs if needed
+  useEffect(() => {
+    const groupStageMatches = matches.filter(m => m.phase === MatchPhase.GROUP_STAGE);
+    const allGroupStageComplete = groupStageMatches.length > 0 && groupStageMatches.every(m => m.isComplete);
+
+    const hasPlayoffs = matches.some(m => m.phase === MatchPhase.SEMIFINAL || m.phase === MatchPhase.FINAL);
+
+    if (allGroupStageComplete && !hasPlayoffs) {
+      // Generate playoffs
+      const currentStandings = calculateStandings(players, matches);
+      const playoffMatches = generatePlayoffMatches(currentStandings);
+      setMatches(prev => [...prev, ...playoffMatches]);
+    }
+
+    // Check if semifinal is complete and generate final if needed
+    const semifinalMatch = matches.find(m => m.phase === MatchPhase.SEMIFINAL);
+    const hasFinal = matches.some(m => m.phase === MatchPhase.FINAL);
+
+    if (semifinalMatch && semifinalMatch.isComplete && !hasFinal) {
+      const currentStandings = calculateStandings(players, matches);
+      const firstPlaceId = currentStandings[0].playerId;
+      const finalMatch = generateFinalMatch(semifinalMatch, firstPlaceId);
+      setMatches(prev => [...prev, finalMatch]);
+    }
+  }, [matches, players]);
+
   const handleStartTournament = () => {
-    // Validate names
     if (players.some(p => !p.name.trim())) {
       alert(`Please enter all ${playerCount} player names!`);
       return;
     }
-    
-    // Generate schedule
-    const newMatches = generateRoundRobinSchedule(players);
+
+    const newMatches = generateTournamentSchedule(players);
     setMatches(newMatches);
     setView(AppView.DASHBOARD);
   };
@@ -81,25 +101,33 @@ const App: React.FC = () => {
   const handleUpdateScore = async (matchId: string, s1: number, s2: number, isOvertime: boolean) => {
     setUpdatingMatchId(matchId);
 
-    // Update match with score
     setMatches(prev => prev.map(m => {
-        if (m.id === matchId) {
-            return { ...m, p1Score: s1, p2Score: s2, isOvertime, isComplete: true };
-        }
-        return m;
+      if (m.id === matchId) {
+        return { ...m, team1Score: s1, team2Score: s2, isOvertime, isComplete: true };
+      }
+      return m;
     }));
 
     setUpdatingMatchId(null);
   };
 
   const standings = useMemo(() => calculateStandings(players, matches), [players, matches]);
-  const upcomingMatches = matches.filter(m => !m.isComplete);
-  const completedMatches = matches.filter(m => m.isComplete);
+
+  const groupStageMatches = matches.filter(m => m.phase === MatchPhase.GROUP_STAGE);
+  const playoffMatches = matches.filter(m => m.phase === MatchPhase.SEMIFINAL || m.phase === MatchPhase.FINAL);
+
+  const upcomingGroupMatches = groupStageMatches.filter(m => !m.isComplete);
+  const completedGroupMatches = groupStageMatches.filter(m => m.isComplete);
+  const upcomingPlayoffMatches = playoffMatches.filter(m => !m.isComplete);
+  const completedPlayoffMatches = playoffMatches.filter(m => m.isComplete);
+
+  const groupStageComplete = groupStageMatches.length > 0 && groupStageMatches.every(m => m.isComplete);
+  const tournamentComplete = matches.length > 0 && matches.every(m => m.isComplete);
 
   const handleReset = () => {
     if (confirm("Are you sure? This will delete all tournament data.")) {
-        localStorage.removeItem('tapeToTapeData');
-        window.location.reload();
+      localStorage.removeItem('tapeToTapeData');
+      window.location.reload();
     }
   };
 
@@ -122,7 +150,7 @@ const App: React.FC = () => {
           <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8 animate-fade-in">
             <div className="text-center space-y-2">
               <h2 className="text-3xl font-bold text-white">New Tournament</h2>
-              <p className="text-slate-400">Choose player count and enter names.</p>
+              <p className="text-slate-400">Team-based group stage + playoffs!</p>
             </div>
 
             <div className="w-full max-w-md space-y-4 bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl">
@@ -164,7 +192,7 @@ const App: React.FC = () => {
                   />
                 </div>
               ))}
-              
+
               <button
                 onClick={handleStartTournament}
                 className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3 rounded-lg shadow-lg transform transition active:scale-95 mt-4"
@@ -178,54 +206,96 @@ const App: React.FC = () => {
         {view === AppView.DASHBOARD && (
           <div className="space-y-8">
             <Standings data={standings} />
-            
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-slate-300 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                Active Schedule
-              </h3>
-              
-              {upcomingMatches.length === 0 && completedMatches.length > 0 && (
-                  <div className="p-8 text-center bg-slate-800/50 rounded-xl border border-slate-700">
-                      <p className="text-xl font-bold text-white mb-2">Regular Season Complete!</p>
-                      <p className="text-slate-400">The top 2 players ({standings[0]?.name} & {standings[1]?.name}) should now play a Best of 3 Final!</p>
-                  </div>
-              )}
 
-              {upcomingMatches.map(match => (
-                <MatchCard 
+            {/* Group Stage Section */}
+            {!groupStageComplete && upcomingGroupMatches.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-slate-300">Group Stage</h3>
+                  <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-1 rounded">
+                    {completedGroupMatches.length}/{groupStageMatches.length} Complete
+                  </span>
+                </div>
+
+                {upcomingGroupMatches.map(match => (
+                  <MatchCard
                     key={match.id}
                     match={match}
-                    p1={players.find(p => p.id === match.p1Id)!}
-                    p2={players.find(p => p.id === match.p2Id)!}
+                    players={players}
                     onUpdateScore={handleUpdateScore}
                     isUpdating={updatingMatchId === match.id}
-                />
-              ))}
+                  />
+                ))}
+              </div>
+            )}
 
-              {completedMatches.length > 0 && (
-                  <div className="pt-8">
-                    <h3 className="text-lg font-bold text-slate-400 mb-4">Completed Games</h3>
-                    <div className="space-y-4 opacity-80">
-                        {completedMatches.map(match => (
-                            <MatchCard 
-                                key={match.id}
-                                match={match}
-                                p1={players.find(p => p.id === match.p1Id)!}
-                                p2={players.find(p => p.id === match.p2Id)!}
-                                onUpdateScore={handleUpdateScore}
-                                isUpdating={updatingMatchId === match.id}
-                            />
-                        ))}
-                    </div>
+            {/* Playoff Section */}
+            {groupStageComplete && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-yellow-400">Playoffs</h3>
+                  {!tournamentComplete && (
+                    <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                  )}
+                </div>
+
+                {upcomingPlayoffMatches.length === 0 && completedPlayoffMatches.length === 0 && (
+                  <div className="p-6 text-center bg-slate-800/50 rounded-xl border border-slate-700">
+                    <p className="text-slate-400">Generating playoff bracket...</p>
                   </div>
-              )}
-            </div>
-            
+                )}
+
+                {upcomingPlayoffMatches.map(match => (
+                  <MatchCard
+                    key={match.id}
+                    match={match}
+                    players={players}
+                    onUpdateScore={handleUpdateScore}
+                    isUpdating={updatingMatchId === match.id}
+                  />
+                ))}
+
+                {tournamentComplete && (
+                  <div className="p-8 text-center bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 rounded-xl border-2 border-yellow-600/40">
+                    <div className="text-6xl mb-4">🏆</div>
+                    <p className="text-2xl font-bold text-yellow-400 mb-2">Tournament Complete!</p>
+                    <p className="text-lg text-white">Champion: {standings[0]?.name}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Completed Matches Section */}
+            {(completedGroupMatches.length > 0 || completedPlayoffMatches.length > 0) && (
+              <div className="pt-8">
+                <h3 className="text-lg font-bold text-slate-400 mb-4">Match History</h3>
+                <div className="space-y-4 opacity-80">
+                  {completedPlayoffMatches.map(match => (
+                    <MatchCard
+                      key={match.id}
+                      match={match}
+                      players={players}
+                      onUpdateScore={handleUpdateScore}
+                      isUpdating={updatingMatchId === match.id}
+                    />
+                  ))}
+                  {completedGroupMatches.map(match => (
+                    <MatchCard
+                      key={match.id}
+                      match={match}
+                      players={players}
+                      onUpdateScore={handleUpdateScore}
+                      isUpdating={updatingMatchId === match.id}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="pt-12 pb-4 text-center">
-                <button onClick={handleReset} className="text-xs text-red-500 hover:text-red-400 underline">
-                    Reset Tournament Data
-                </button>
+              <button onClick={handleReset} className="text-xs text-red-500 hover:text-red-400 underline">
+                Reset Tournament Data
+              </button>
             </div>
           </div>
         )}
