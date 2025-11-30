@@ -1,0 +1,1 @@
+Run TypeScript type checking with `npx tsc --noEmit` to verify there are no type errors in the codebase.

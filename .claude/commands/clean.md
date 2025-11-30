@@ -1,0 +1,1 @@
+Clean the project by removing the `dist/` directory and `node_modules/`, then run `npm install` to get a fresh start.

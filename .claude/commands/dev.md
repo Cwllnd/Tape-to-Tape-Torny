@@ -1,0 +1,1 @@
+Start the development server with `npm run dev` and monitor for any errors or issues.

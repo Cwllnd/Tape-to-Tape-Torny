@@ -1,0 +1,17 @@
+# Claude Code configuration for TapeToTape Tourney Tracker
+
+# Project-specific settings
+[project]
+name = "TapeToTape Tourney Tracker"
+type = "react-typescript"
+
+# Default behavior preferences
+[preferences]
+# Always read files before editing
+read_before_edit = true
+
+# Prefer smaller, focused changes
+minimal_changes = true
+
+# Use the project prompt for context
+default_prompt = "project"

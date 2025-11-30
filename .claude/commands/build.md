@@ -1,0 +1,1 @@
+Build the project for production using `npm run build`. Check for any TypeScript errors or build warnings and report them.
