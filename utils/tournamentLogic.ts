@@ -17,12 +17,18 @@ const generateGroupStageMatches = (players: Player[], teamSize: number = 3): Mat
   const totalPlayers = playerIds.length;
 
   // Calculate players needed per game
-  const playersPerGame = teamSize * 2;
+  let effectiveTeamSize = teamSize;
+  let playersPerGame = effectiveTeamSize * 2;
+
+  // Auto-adjust team size if not enough players
+  while (totalPlayers < playersPerGame && effectiveTeamSize > 1) {
+    effectiveTeamSize--;
+    playersPerGame = effectiveTeamSize * 2;
+    console.log(`Adjusted team size to ${effectiveTeamSize}v${effectiveTeamSize} for ${totalPlayers} players`);
+  }
 
   if (totalPlayers < playersPerGame) {
-    console.warn(`Not enough players for ${teamSize}v${teamSize}. Need ${playersPerGame}, have ${totalPlayers}`);
-    // Fallback? Or just generate empty array?
-    // For now, let's just make smaller teams if needed
+    console.warn(`Not enough players for any team match. Need at least 2, have ${totalPlayers}`);
     return [];
   }
 
@@ -38,8 +44,8 @@ const generateGroupStageMatches = (players: Player[], teamSize: number = 3): Mat
     const gamePlayers = shuffled.slice(0, playersPerGame);
 
     // Split into two teams
-    const team1 = gamePlayers.slice(0, teamSize);
-    const team2 = gamePlayers.slice(teamSize, playersPerGame);
+    const team1 = gamePlayers.slice(0, effectiveTeamSize);
+    const team2 = gamePlayers.slice(effectiveTeamSize, playersPerGame);
 
     matches.push({
       id: `group-${matchNum}-${Date.now()}-${Math.random()}`,

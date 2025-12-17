@@ -205,8 +205,8 @@ const App: React.FC = () => {
                       key={size}
                       onClick={() => setGameSettings(prev => ({ ...prev, teamSize: size as 1 | 2 | 3 }))}
                       className={`flex-1 py-2 rounded-lg font-semibold transition ${gameSettings.teamSize === size
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                         }`}
                     >
                       {size}v{size}
@@ -319,11 +319,17 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* Completed Matches Section */}
+            {/* Completed Matches Section - Match History */}
             {(completedGroupMatches.length > 0 || completedPlayoffMatches.length > 0) && (
-              <div className="pt-8">
-                <h3 className="text-lg font-bold text-slate-400 mb-4">Match History</h3>
-                <div className="space-y-4 opacity-80">
+              <div className="pt-8 bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-xl">📋</span>
+                  <h3 className="text-lg font-bold text-slate-300">Match History</h3>
+                  <span className="text-xs bg-slate-700 text-slate-400 px-2 py-1 rounded">
+                    {completedGroupMatches.length + completedPlayoffMatches.length} Completed
+                  </span>
+                </div>
+                <div className="space-y-3">
                   {completedPlayoffMatches.map(match => (
                     <MatchCard
                       key={match.id}
