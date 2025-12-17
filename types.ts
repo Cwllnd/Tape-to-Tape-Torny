@@ -2,6 +2,12 @@ export interface Player {
   id: string;
   name: string;
   seed: number;
+  icon?: string; // Icon ID (1-10)
+  color?: string; // Hex code or Tailwind class
+}
+
+export interface GameSettings {
+  teamSize: 1 | 2 | 3;
 }
 
 export enum MatchPhase {
@@ -30,6 +36,8 @@ export interface Match {
 export interface StandingsRow {
   playerId: string;
   name: string;
+  icon?: string;
+  color?: string;
   played: number;
   wins: number;
   losses: number;
