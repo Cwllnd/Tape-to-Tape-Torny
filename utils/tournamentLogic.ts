@@ -11,20 +11,35 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 };
 
 // Generate team-based matches for group stage
-const generateGroupStageMatches = (players: Player[]): Match[] => {
+const generateGroupStageMatches = (players: Player[], teamSize: number = 3): Match[] => {
   const matches: Match[] = [];
   const playerIds = players.map(p => p.id);
-  const playerCount = playerIds.length;
-  const teamSize = Math.floor(playerCount / 2);
+  const totalPlayers = playerIds.length;
 
-  // Target: 5-6 group stage matches
-  const targetMatches = playerCount <= 4 ? 4 : playerCount <= 6 ? 5 : 6;
+  // Calculate players needed per game
+  const playersPerGame = teamSize * 2;
+
+  if (totalPlayers < playersPerGame) {
+    console.warn(`Not enough players for ${teamSize}v${teamSize}. Need ${playersPerGame}, have ${totalPlayers}`);
+    // Fallback? Or just generate empty array?
+    // For now, let's just make smaller teams if needed
+    return [];
+  }
+
+  // Target matches: ensure everyone plays enough
+  // A rough heuristic: 2 * players matches usually gives everyone a few games
+  const targetMatches = Math.max(totalPlayers, 5);
 
   for (let matchNum = 0; matchNum < targetMatches; matchNum++) {
-    // Shuffle and split players into two teams
+    // Shuffle all players
     const shuffled = shuffleArray(playerIds);
-    const team1 = shuffled.slice(0, teamSize);
-    const team2 = shuffled.slice(teamSize, teamSize * 2);
+
+    // Take the first N players for the game
+    const gamePlayers = shuffled.slice(0, playersPerGame);
+
+    // Split into two teams
+    const team1 = gamePlayers.slice(0, teamSize);
+    const team2 = gamePlayers.slice(teamSize, playersPerGame);
 
     matches.push({
       id: `group-${matchNum}-${Date.now()}-${Math.random()}`,
@@ -93,10 +108,10 @@ export const generateFinalMatch = (semifinalMatch: Match, firstPlaceId: string):
 };
 
 // Main function to generate tournament schedule
-export const generateTournamentSchedule = (players: Player[]): Match[] => {
+export const generateTournamentSchedule = (players: Player[], teamSize: number): Match[] => {
   // For now, just generate group stage matches
   // Playoffs will be generated dynamically when group stage completes
-  return generateGroupStageMatches(players);
+  return generateGroupStageMatches(players, teamSize);
 };
 
 // Calculate standings from all matches (team and individual)
