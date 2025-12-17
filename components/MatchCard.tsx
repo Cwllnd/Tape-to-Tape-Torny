@@ -15,9 +15,10 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, players, onUpdateSc
   const [isEditing, setIsEditing] = useState(!match.isComplete);
 
   const handleSave = () => {
-    const score1 = parseInt(s1);
-    const score2 = parseInt(s2);
-    if (!isNaN(score1) && !isNaN(score2)) {
+    // Allow 0 as valid score - check string is not empty and parses to valid number
+    const score1 = s1.trim() !== '' ? parseInt(s1, 10) : NaN;
+    const score2 = s2.trim() !== '' ? parseInt(s2, 10) : NaN;
+    if (!isNaN(score1) && !isNaN(score2) && score1 >= 0 && score2 >= 0) {
       onUpdateScore(match.id, score1, score2, isOvertime);
       setIsEditing(false);
     }

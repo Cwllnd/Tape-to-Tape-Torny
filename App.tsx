@@ -142,8 +142,21 @@ const App: React.FC = () => {
 
   const handleReset = () => {
     if (confirm("Are you sure? This will delete all tournament data.")) {
+      // Clear localStorage
       localStorage.removeItem('tapeToTapeData');
-      window.location.reload();
+      // Reset all state to initial values
+      setMatches([]);
+      setView(AppView.SETUP);
+      setPlayerCount(6);
+      setPlayers([
+        { id: 'p1', name: '', seed: 1, icon: '1', color: '#ef4444' },
+        { id: 'p2', name: '', seed: 2, icon: '2', color: '#3b82f6' },
+        { id: 'p3', name: '', seed: 3, icon: '3', color: '#22c55e' },
+        { id: 'p4', name: '', seed: 4, icon: '4', color: '#eab308' },
+        { id: 'p5', name: '', seed: 5, icon: '5', color: '#8b5cf6' },
+        { id: 'p6', name: '', seed: 6, icon: '6', color: '#f97316' },
+      ]);
+      setGameSettings({ teamSize: 3 });
     }
   };
 
